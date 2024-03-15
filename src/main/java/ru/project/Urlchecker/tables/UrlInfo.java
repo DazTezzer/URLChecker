@@ -6,24 +6,46 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 @Entity
 public class UrlInfo {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
-
     private String url;
     private boolean status;
     private int delay;
+    private int response_period;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof UrlInfo urlInfo)) return false;
+        return isStatus() == urlInfo.isStatus() && getDelay() == urlInfo.getDelay() && getResponse_period() == urlInfo.getResponse_period() && Objects.equals(getId(), urlInfo.getId()) && Objects.equals(getUrl(), urlInfo.getUrl());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getId(), getUrl(), isStatus(), getDelay(), getResponse_period());
+    }
+
+    public int getResponse_period() {
+        return response_period;
+    }
+
+    public void setResponse_period(int response_period) {
+        this.response_period = response_period;
+    }
 
     public UrlInfo() {
     }
 
-    public UrlInfo(String url, boolean status, int delay) {
+    public UrlInfo(String url, boolean status, int delay,int response_period) {
         this.url = url;
         this.status = status;
         this.delay = delay;
+        this.response_period = response_period;
     }
 
 
@@ -64,29 +86,4 @@ public class UrlInfo {
         return other instanceof UrlInfo;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        UrlInfo other = (UrlInfo) o;
-
-        if (status != other.status) return false;
-        if (delay != other.delay) return false;
-        if (id != null ? !id.equals(other.id) : other.id != null) return false;
-        if (url != null ? !url.equals(other.url) : other.url != null) return false;
-
-        return true;
-    }
-
-    @Override
-    public int hashCode() {
-        final int PRIME = 59;
-        int result = 1;
-        result = PRIME * result + ((id == null) ? 0 : id.hashCode());
-        result = PRIME * result + (url == null ? 0 : url.hashCode());
-        result = PRIME * result + Boolean.hashCode(status);
-        result = PRIME * result + Integer.hashCode(delay);
-        return result;
-    }
 }

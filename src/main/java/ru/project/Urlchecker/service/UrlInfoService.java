@@ -16,7 +16,7 @@ public class UrlInfoService {
     }
 
     public UrlInfo create(UrlInfoDTO dto) {
-        return urlInfoRepository.save(new UrlInfo(dto.getUrl(),dto.getStatus(),dto.getDelay())) ;
+        return urlInfoRepository.save(new UrlInfo(dto.getUrl(),dto.getStatus(),dto.getDelay(),dto.getResponse_period())) ;
     }
     public List<UrlInfo> readAll(){
         return urlInfoRepository.findAll();

@@ -1,12 +1,63 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
 <head>
     <meta charset="UTF-8">
     <title>Home</title>
+    <link rel="stylesheet" href="../static/styles.css">
 </head>
+
 <body>
-<button>
-    Test
-</button>
+<div class="main-container">
+    <table>
+        <tr>
+            <th>Статус</th>
+            <th>Url</th>
+            <th>Время опроса мс</th>
+        </tr>
+        <tr th:each="item : ${urls}">
+            <td>
+                <span th:if="${item.status == true}" style="color: green;">&#11044; online</span>
+                <span th:if="${item.status == false}" style="color: red;">&#11044; offline</span>
+            </td>
+            <td th:text="${item.url}">Url not found</td>
+            <td th:text="${item.response_period}">Poll Time not found</td>
+        </tr>
+    </table>
+</div>
+
+<div class="bottom-panel">
+    <input type="text" class="input" placeholder="Введите Url...">
+    <input type="text" class="input" placeholder="Введите время опроса...">
+    <button class="button">Добавить</button>
+    <button class="button">Удалить</button>
+    <form method="post" action="/home">
+        <button type="submit" class="button">Получить текущий статус</button>
+    </form>
+    <button class="button">Проверить узел</button>
+</div>
+<script>
+    const rows = document.querySelectorAll('tr');
+    const inputUrl = document.querySelectorAll('input')[0]; // Поле для ввода URL
+    const inputTime = document.querySelectorAll('input')[1]; // Поле для ввода времени опроса
+
+    rows.forEach((row, index) => {
+        row.addEventListener('click', () => {
+            if (index === 0) { // Игнорировать нажатия на первую строку (заголовки столбцов)
+                return;
+            }
+
+            rows.forEach(r => {
+                r.classList.remove('selected');
+            });
+
+            row.classList.add('selected');
+
+            const cells = row.querySelectorAll('td');
+            inputUrl.value = cells[1].textContent; // Заполнить поле URL данными из второй ячейки
+            inputTime.value = cells[2].textContent; // Заполнить поле времени опроса данными из третьей ячейки
+        });
+    });
+</script>
 </body>
 </html>
