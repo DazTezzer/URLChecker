@@ -22,7 +22,17 @@ public class UrlInfoService {
         return urlInfoRepository.findAll();
     }
     public UrlInfo update(UrlInfo urlInfo) {
-        return urlInfoRepository.save(urlInfo);
+        UrlInfo existingUrlInfo = urlInfoRepository.findByUrl(urlInfo.getUrl());
+
+        if (existingUrlInfo != null) {
+            existingUrlInfo.setStatus(urlInfo.isStatus());
+            existingUrlInfo.setDelay(urlInfo.getDelay());
+            existingUrlInfo.setResponse_period(urlInfo.getResponse_period());
+
+            return urlInfoRepository.save(existingUrlInfo);
+        } else {
+            return urlInfoRepository.save(urlInfo);
+        }
     }
     public void delete(Long id) {
         urlInfoRepository.deleteById(id);

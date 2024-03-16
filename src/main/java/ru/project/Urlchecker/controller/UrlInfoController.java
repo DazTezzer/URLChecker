@@ -9,7 +9,13 @@ import ru.project.Urlchecker.dto.UrlInfoDTO;
 import ru.project.Urlchecker.service.UrlInfoService;
 import ru.project.Urlchecker.tables.UrlInfo;
 
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 public class UrlInfoController {
@@ -34,5 +40,37 @@ public class UrlInfoController {
     public HttpStatus delete(@PathVariable Long id){
         urlInfoService.delete(id);
         return HttpStatus.OK;
+    }
+    @GetMapping("/status")
+    public ResponseEntity<Map<String, Object>> checkIfUrl(@RequestParam String url) {
+        long startTime = System.currentTimeMillis();
+        try {
+            URL requestUrl = new URL(url);
+            HttpURLConnection con = (HttpURLConnection) requestUrl.openConnection();
+            con.setRequestMethod("GET");
+            con.connect();
+            int responseCode = con.getResponseCode();
+            long endTime = System.currentTimeMillis();
+            long delay = endTime - startTime;
+
+            boolean isValid = responseCode >= 200 && responseCode <= 399;
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("isValid", isValid);
+            result.put("delay", delay);
+
+            HttpStatus status = isValid ? HttpStatus.OK : HttpStatus.BAD_REQUEST;
+            return ResponseEntity.status(status).body(result);
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+            Map<String, Object> errorResult = new HashMap<>();
+            errorResult.put("error", "OUT OF SHAPE URL");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResult);
+        } catch (IOException e) {
+            e.printStackTrace();
+            Map<String, Object> errorResult = new HashMap<>();
+            errorResult.put("error", "IO Exception occurred");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResult);
+        }
     }
 }

@@ -21,7 +21,7 @@ body {
     margin-right: 10px;
 }
 .button {
-    padding: 8px 15px;
+    padding: 4px 7px;
     background-color: #007bff;
     color: #fff;
     border: none;
@@ -38,4 +38,12 @@ th, td {
 }
 .selected {
     background-color: #99caff;
+}
+.input-wrapper {
+    display: flex;
+    margin-right: 10px;
+}
+.form-container {
+    display: flex;
+    align-items: center;
 }

@@ -6,4 +6,5 @@ import ru.project.Urlchecker.tables.UrlInfo;
 
 @Repository
 public interface UrlInfoRepository extends JpaRepository<UrlInfo,Long> {
+    UrlInfo findByUrl(String url);
 }

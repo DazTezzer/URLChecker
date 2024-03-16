@@ -2,18 +2,18 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
-    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" charset="UTF-8">
     <title>Home</title>
     <link rel="stylesheet" href="../static/styles.css">
 </head>
-
 <body>
 <div class="main-container">
     <table>
         <tr>
             <th>Статус</th>
             <th>Url</th>
-            <th>Время опроса мс</th>
+            <th>Время опроса с</th>
+            <th>Задержка мс</th>
         </tr>
         <tr th:each="item : ${urls}">
             <td>
@@ -22,28 +22,38 @@
             </td>
             <td th:text="${item.url}">Url not found</td>
             <td th:text="${item.response_period}">Poll Time not found</td>
+            <td th:text="${item.delay}">delay not found</td>
+            <td th:text="${item.id}" style="display: none;">id not found</td>
         </tr>
     </table>
 </div>
 
 <div class="bottom-panel">
-    <input type="text" class="input" placeholder="Введите Url...">
-    <input type="text" class="input" placeholder="Введите время опроса...">
-    <button class="button">Добавить</button>
-    <button class="button">Удалить</button>
-    <form method="post" action="/home">
+    <form method="post" th:action="@{/addurls}" class="form-container">
+        <div class="input-wrapper">
+            <input type="url" class="input" name="url" placeholder="Введите Url...">
+            <input type="number" class="input" name="response_period" placeholder="Введите время опроса...">
+        </div>
+        <button type="submit" class="button">Добавить</button>
+        <button type="submit" class="button">Проверить узел</button>
+    </form>
+    <form method="post" th:action="@{/deleteurls}" class="form-container">
+        <input type="hidden" name="id" >
+        <button type="submit" class="button">Удалить</button>
+    </form>
+    <form method="post" action="/home" class="form-container">
         <button type="submit" class="button">Получить текущий статус</button>
     </form>
-    <button class="button">Проверить узел</button>
 </div>
 <script>
     const rows = document.querySelectorAll('tr');
-    const inputUrl = document.querySelectorAll('input')[0]; // Поле для ввода URL
-    const inputTime = document.querySelectorAll('input')[1]; // Поле для ввода времени опроса
+    const inputUrl = document.querySelectorAll('input')[0];
+    const inputTime = document.querySelectorAll('input')[1];
+    const inputId = document.querySelectorAll('input')[2];
 
     rows.forEach((row, index) => {
         row.addEventListener('click', () => {
-            if (index === 0) { // Игнорировать нажатия на первую строку (заголовки столбцов)
+            if (index === 0) {
                 return;
             }
 
@@ -54,8 +64,9 @@
             row.classList.add('selected');
 
             const cells = row.querySelectorAll('td');
-            inputUrl.value = cells[1].textContent; // Заполнить поле URL данными из второй ячейки
-            inputTime.value = cells[2].textContent; // Заполнить поле времени опроса данными из третьей ячейки
+            inputId.value = cells[4].textContent.trim();
+            inputUrl.value = cells[1].textContent.trim();
+            inputTime.value = cells[2].textContent.trim();
         });
     });
 </script>
