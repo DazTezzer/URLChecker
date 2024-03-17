@@ -62,12 +62,10 @@ public class UrlInfoController {
             HttpStatus status = isValid ? HttpStatus.OK : HttpStatus.BAD_REQUEST;
             return ResponseEntity.status(status).body(result);
         } catch (MalformedURLException e) {
-            e.printStackTrace();
             Map<String, Object> errorResult = new HashMap<>();
             errorResult.put("error", "OUT OF SHAPE URL");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResult);
         } catch (IOException e) {
-            e.printStackTrace();
             Map<String, Object> errorResult = new HashMap<>();
             errorResult.put("error", "IO Exception occurred");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResult);

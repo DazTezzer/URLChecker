@@ -6,6 +6,7 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import ru.project.Urlchecker.tables.UrlInfo;
 
@@ -39,31 +40,47 @@ public class WebController {
     }
     @PostMapping("/addurls")
     public String urlsAdd(@RequestParam("url") String url, @RequestParam("response_period") Integer response_period){
-        ResponseEntity<Map<String, Object>> responseEntity = restTemplate.exchange(
-                REST_API_URL+"/status?url="+ url,
-                HttpMethod.GET,
-                null,
-                new ParameterizedTypeReference<Map<String, Object>>() {}
-        );
-        Map<String, Object> result = responseEntity.getBody();
-        assert result != null;
-        if (result.containsKey("error")) {
-            return "redirect:/home";
+        try {
+            ResponseEntity<Map<String, Object>> responseEntity = restTemplate.exchange(
+                    REST_API_URL + "/status?url=" + url,
+                    HttpMethod.GET,
+                    null,
+                    new ParameterizedTypeReference<Map<String, Object>>() {}
+            );
+            Map<String, Object> result = responseEntity.getBody();
+            assert result != null;
+            Object delayObj = result.get("delay");
+            int delay = (Integer) delayObj;
+            Object isValid = result.get("isValid");
+            boolean status = Boolean.parseBoolean(Boolean.toString((Boolean) isValid));
+            UrlInfo urlInfo = new UrlInfo(url,status,delay,response_period);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<UrlInfo> requestEntity = new HttpEntity<>(urlInfo, headers);
+            restTemplate.exchange(
+                    REST_API_URL,
+                    HttpMethod.PUT,
+                    requestEntity,
+                    Void.class
+            );
+        } catch (HttpClientErrorException e) {
+            if (e.getStatusCode().equals(HttpStatus.BAD_REQUEST) && e.getResponseBodyAsString().contains("IO Exception occurred")) {
+                UrlInfo urlInfo = new UrlInfo(url,false,0,response_period);
+                HttpHeaders headers = new HttpHeaders();
+                headers.setContentType(MediaType.APPLICATION_JSON);
+                HttpEntity<UrlInfo> requestEntity = new HttpEntity<>(urlInfo, headers);
+                restTemplate.exchange(
+                        REST_API_URL,
+                        HttpMethod.PUT,
+                        requestEntity,
+                        Void.class
+                );
+                return "redirect:/home";
+            }
+            if (e.getStatusCode().equals(HttpStatus.BAD_REQUEST) && e.getResponseBodyAsString().contains("OUT OF SHAPE URL")) {
+                return "redirect:/home";
+            }
         }
-        Object delayObj = result.get("delay");
-        int delay = (Integer) delayObj;
-        Object isValid = result.get("isValid");
-        boolean status = Boolean.parseBoolean(Boolean.toString((Boolean) isValid));
-        UrlInfo urlInfo = new UrlInfo(url,status,delay,response_period);
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<UrlInfo> requestEntity = new HttpEntity<>(urlInfo, headers);
-        restTemplate.exchange(
-                REST_API_URL,
-                HttpMethod.PUT,
-                requestEntity,
-                Void.class
-        );
         return "redirect:/home";
     }
     @PostMapping("/deleteurls")
