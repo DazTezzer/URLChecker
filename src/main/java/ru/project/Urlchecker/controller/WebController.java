@@ -94,7 +94,6 @@ public class WebController {
         );
         return "redirect:/home";
     }
-
     @PostMapping("/home")
     public String refresh() {
         return "redirect:/home";

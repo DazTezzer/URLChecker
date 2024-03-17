@@ -28,7 +28,7 @@ public class UrlInfoController {
     public ResponseEntity<UrlInfo> create(@RequestBody UrlInfoDTO dto) {
         return new ResponseEntity<>(urlInfoService.create(dto), HttpStatus.OK);
     }
-    @GetMapping
+    @GetMapping()
     public ResponseEntity<List<UrlInfo>> readAll() {
         return new ResponseEntity<>(urlInfoService.readAll(), HttpStatus.OK);
     }

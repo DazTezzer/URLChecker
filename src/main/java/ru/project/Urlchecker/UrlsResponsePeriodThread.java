@@ -8,6 +8,7 @@ import ru.project.Urlchecker.tables.UrlInfo;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -41,27 +42,34 @@ public class UrlsResponsePeriodThread extends Thread {
                     QueueMap.put(urlInfo.getId(), urlInfo.getResponse_period());
                 }
             }
-            for (Map.Entry<Long, Integer> entry : QueueMap.entrySet()) {
-                if (entry.getValue() == 1) {
-                    checkUrlAvailability(HelpMap.get(entry.getKey()));
-                    UrlInfo help = HelpMap.get(entry.getKey());
-                    QueueMap.put(entry.getKey(),help.getResponse_period());
-                }
-                else
-                {
-                    QueueMap.put(entry.getKey(), entry.getValue()-1);
-                }
-
-
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+            Iterator<Map.Entry<Long, Integer>> iterator = QueueMap.entrySet().iterator();
+            while (iterator.hasNext()) {
+                Map.Entry<Long, Integer> entry = iterator.next();
+                UrlInfo help = HelpMap.get(entry.getKey());
+                if (help == null) {
+                    System.out.println("UrlInfo object is null for key: " + entry.getKey());
+                    iterator.remove();
+                } else {
+                    if (entry.getValue() == 1) {
+                        checkUrlAvailability(help);
+                        QueueMap.put(entry.getKey(), help.getResponse_period());
+                    } else {
+                        QueueMap.put(entry.getKey(), entry.getValue() - 1);
+                    }
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         }
     }
     public void checkUrlAvailability(UrlInfo urlInfo) {
+        if (urlInfo == null) {
+            return;
+        }
+
         long startTime = System.currentTimeMillis();
         int intDelay = 0;
         try {
@@ -72,17 +80,17 @@ public class UrlsResponsePeriodThread extends Thread {
             long endTime = System.currentTimeMillis();
             long delay = endTime - startTime;
             intDelay = Math.toIntExact(delay);
-            if (responseCode >= 200 && responseCode <= 399) {
-                    putUrls(urlInfo,true,intDelay);
-                    System.out.println("\u001B[32m"+urlInfo.getUrl()+" is reachable  delay = " + intDelay + "\u001B[0m");
-            } else {
-                    putUrls(urlInfo,false,intDelay);
-                    System.out.println("\u001B[31m"+urlInfo.getUrl()+" is unreachable delay = " + intDelay + "\u001B[0m");
-            }
 
+            if (responseCode >= 200 && responseCode <= 399) {
+                putUrls(urlInfo, true, intDelay);
+                System.out.println("\u001B[32m" + urlInfo.getUrl() + " is reachable  delay = " + intDelay + "\u001B[0m");
+            } else {
+                putUrls(urlInfo, false, intDelay);
+                System.out.println("\u001B[31m" + urlInfo.getUrl() + " is unreachable delay = " + intDelay + "\u001B[0m");
+            }
         } catch (Exception e) {
-            putUrls(urlInfo,false,intDelay);
-            System.out.println("\u001B[31m"+urlInfo.getUrl()+" is unreachable delay = " + intDelay + "\u001B[0m");
+            putUrls(urlInfo, false, intDelay);
+            System.out.println("\u001B[31m" + urlInfo.getUrl() + " is unreachable delay = " + intDelay + "\u001B[0m");
         }
     }
     public void putUrls(UrlInfo urlInfo,boolean status,int intDelay )
