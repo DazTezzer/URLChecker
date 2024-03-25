@@ -24,7 +24,6 @@ public class WebController {
     private static final String REST_API_URL = "http://localhost:8081";
 
 
-
     @GetMapping("/home")
     public String urlsInfoList(Model model) {
         ResponseEntity<List<UrlInfo>> responseEntity = restTemplate.exchange(
@@ -39,7 +38,7 @@ public class WebController {
         return "home";
     }
     @PostMapping("/addurls")
-    public String urlsAdd(@RequestParam("url") String url, @RequestParam("response_period") Integer response_period){
+    public String urlsAdd(@RequestParam("url") String url, @RequestParam("response_period") Integer response_period) {
         try {
             ResponseEntity<Map<String, Object>> responseEntity = restTemplate.exchange(
                     REST_API_URL + "/status?url=" + url,
@@ -47,25 +46,17 @@ public class WebController {
                     null,
                     new ParameterizedTypeReference<Map<String, Object>>() {}
             );
+
             Map<String, Object> result = responseEntity.getBody();
-            assert result != null;
-            Object delayObj = result.get("delay");
-            int delay = (Integer) delayObj;
-            Object isValid = result.get("isValid");
-            boolean status = Boolean.parseBoolean(Boolean.toString((Boolean) isValid));
-            UrlInfo urlInfo = new UrlInfo(url,status,delay,response_period);
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            HttpEntity<UrlInfo> requestEntity = new HttpEntity<>(urlInfo, headers);
-            restTemplate.exchange(
-                    REST_API_URL,
-                    HttpMethod.PUT,
-                    requestEntity,
-                    Void.class
-            );
-        } catch (HttpClientErrorException e) {
-            if (e.getStatusCode().equals(HttpStatus.BAD_REQUEST) && e.getResponseBodyAsString().contains("IO Exception occurred")) {
-                UrlInfo urlInfo = new UrlInfo(url,false,0,response_period);
+            if (result != null) {
+                Integer delay = (Integer) result.get("delay");
+                Boolean isValid = (Boolean) result.get("isValid");
+
+                if (delay == null || isValid == null) {
+                    delay = 0;
+                    isValid = false;
+                }
+                UrlInfo urlInfo = new UrlInfo(url, isValid, delay, response_period);
                 HttpHeaders headers = new HttpHeaders();
                 headers.setContentType(MediaType.APPLICATION_JSON);
                 HttpEntity<UrlInfo> requestEntity = new HttpEntity<>(urlInfo, headers);
@@ -75,12 +66,22 @@ public class WebController {
                         requestEntity,
                         Void.class
                 );
-                return "redirect:/home";
             }
-            if (e.getStatusCode().equals(HttpStatus.BAD_REQUEST) && e.getResponseBodyAsString().contains("OUT OF SHAPE URL")) {
-                return "redirect:/home";
+        } catch (HttpClientErrorException e) {
+            if (e.getStatusCode().equals(HttpStatus.BAD_REQUEST)) {
+                if (e.getResponseBodyAsString().contains("Failed to connect to the URL or read response")) {
+                    return "redirect:/home";
+                } else if (e.getResponseBodyAsString().contains("Invalid URL format")) {
+                    return "redirect:/home";
+                } else if (e.getResponseBodyAsString().contains("IO Exception occurred")){
+                    return "redirect:/home";
+                }
             }
+
+        } catch (Exception e) {
+            return "redirect:/home";
         }
+
         return "redirect:/home";
     }
     @PostMapping("/deleteurls")
