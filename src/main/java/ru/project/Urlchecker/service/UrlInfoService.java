@@ -1,5 +1,8 @@
 package ru.project.Urlchecker.service;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotEmpty;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -22,14 +25,23 @@ public class UrlInfoService {
     public UrlInfoService(UrlInfoRepository urlInfoRepository) {
         this.urlInfoRepository = urlInfoRepository;
     }
-
+    @NotNull
+    @Valid
     public UrlInfo create(UrlInfoDTO dto) {
-        return urlInfoRepository.save(new UrlInfo(dto.getUrl(),dto.getStatus(),dto.getDelay(),dto.getResponse_period())) ;
+        return urlInfoRepository.save(new UrlInfo(dto.getUrl(),dto.isStatus(),dto.getDelay(),dto.getResponse_period())) ;
     }
+    @NotNull
+    @Valid
     public List<UrlInfo> readAll(){
         return urlInfoRepository.findAll();
     }
-    public UrlInfo update(UrlInfo urlInfo) {
+    @NotNull
+    @Valid
+    public UrlInfo update( UrlInfo urlInfo) {
+        if (!isValidUrl(urlInfo.getUrl())) {
+            throw new IllegalArgumentException("Invalid URL provided");
+        }
+
         UrlInfo existingUrlInfo = urlInfoRepository.findByUrl(urlInfo.getUrl());
 
         if (existingUrlInfo != null) {
@@ -42,41 +54,40 @@ public class UrlInfoService {
             return urlInfoRepository.save(urlInfo);
         }
     }
+    private boolean isValidUrl(@NotEmpty String url) {
+        return url != null && url.matches("^(http|https)://.*$");
+    }
+    @Valid
     public void delete(Long id) {
         urlInfoRepository.deleteById(id);
     }
     public ResponseEntity<Map<String, Object>> status(String url) {
-        long startTime = System.currentTimeMillis();
-
         try {
+            long startTime = System.currentTimeMillis();
             URL requestUrl = new URL(url);
             HttpURLConnection con = (HttpURLConnection) requestUrl.openConnection();
-            con.setRequestMethod("GET");
-
+            con.setRequestMethod("HEAD");
+            con.disconnect();
             int responseCode = con.getResponseCode();
             long endTime = System.currentTimeMillis();
             long delay = endTime - startTime;
-
             boolean isValid = responseCode >= 200 && responseCode <= 399;
-
             Map<String, Object> result = new HashMap<>();
             result.put("isValid", isValid);
             result.put("delay", delay);
-            con.disconnect();
             HttpStatus status = isValid ? HttpStatus.OK : HttpStatus.BAD_REQUEST;
             return ResponseEntity.status(status).body(result);
         } catch (MalformedURLException e) {
-            Map<String, Object> errorResult = new HashMap<>();
-            errorResult.put("error", "Invalid URL format");
-            return ResponseEntity.badRequest().body(errorResult);
+            return handleExceptionResponse(e, "Invalid URL format");
         } catch (IOException e) {
-            Map<String, Object> errorResult = new HashMap<>();
-            errorResult.put("error", "Failed to connect to the URL or read response");
-            return ResponseEntity.badRequest().body(errorResult);
+            return handleExceptionResponse(e, "Failed to connect to the URL or read response");
         } catch (Exception e) {
-            Map<String, Object> errorResult = new HashMap<>();
-            errorResult.put("error", "IO Exception occurred");
-            return ResponseEntity.badRequest().body(errorResult);
+            return handleExceptionResponse(e, "IO Exception occurred");
         }
+    }
+    public ResponseEntity<Map<String, Object>> handleExceptionResponse(Exception e, String errorMessage) {
+        Map<String, Object> errorResult = new HashMap<>();
+        errorResult.put("error", errorMessage);
+        return ResponseEntity.badRequest().body(errorResult);
     }
 }

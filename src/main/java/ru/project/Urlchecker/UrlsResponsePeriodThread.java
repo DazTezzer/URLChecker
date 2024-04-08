@@ -11,10 +11,14 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class UrlsResponsePeriodThread extends Thread {
     private static final String REST_API_URL = "http://localhost:8081";
-    private RestTemplate restTemplateResponsePeriod;
+    private final RestTemplate restTemplateResponsePeriod;
+    private static final int THREAD_POOL_SIZE = 10;
+    private ExecutorService executorService = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
     public UrlsResponsePeriodThread(RestTemplate restTemplateResponsePeriod) {
         this.restTemplateResponsePeriod = restTemplateResponsePeriod;
     }
@@ -69,14 +73,14 @@ public class UrlsResponsePeriodThread extends Thread {
         if (urlInfo == null) {
             return;
         }
-
-        long startTime = System.currentTimeMillis();
-        int intDelay = 0;
+        int intDelay;
         try {
-            HttpURLConnection connection = (HttpURLConnection) new URL(urlInfo.getUrl()).openConnection();
-            connection.setRequestMethod("HEAD");
-            int responseCode = connection.getResponseCode();
-            connection.disconnect();
+            long startTime = System.currentTimeMillis();
+            URL requestUrl = new URL(urlInfo.getUrl());
+            HttpURLConnection con = (HttpURLConnection) requestUrl.openConnection();
+            con.setRequestMethod("HEAD");
+            con.disconnect();
+            int responseCode = con.getResponseCode();
             long endTime = System.currentTimeMillis();
             long delay = endTime - startTime;
             intDelay = Math.toIntExact(delay);
@@ -89,8 +93,8 @@ public class UrlsResponsePeriodThread extends Thread {
                 System.out.println("\u001B[31m" + urlInfo.getUrl() + " is unreachable delay = " + intDelay + "\u001B[0m");
             }
         } catch (Exception e) {
-            putUrls(urlInfo, false, intDelay);
-            System.out.println("\u001B[31m" + urlInfo.getUrl() + " is unreachable delay = " + intDelay + "\u001B[0m");
+            putUrls(urlInfo, false, 0);
+            System.out.println("\u001B[31m" + urlInfo.getUrl() + " is unreachable delay = " + 0 + "\u001B[0m");
         }
     }
     public void putUrls(UrlInfo urlInfo,boolean status,int intDelay )
@@ -100,11 +104,13 @@ public class UrlsResponsePeriodThread extends Thread {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<UrlInfo> requestEntity = new HttpEntity<>(urlInfo, headers);
-        restTemplateResponsePeriod.exchange(
-                REST_API_URL,
-                HttpMethod.PUT,
-                requestEntity,
-                Void.class
-        );
+        executorService.submit(() -> {
+            restTemplateResponsePeriod.exchange(
+                    REST_API_URL,
+                    HttpMethod.PUT,
+                    requestEntity,
+                    Void.class
+            );
+        });
     }
 }
